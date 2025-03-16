@@ -1,0 +1,4 @@
+name = "DataCollector"
+uuid = "3cb051c2-a9e8-44bd-adc1-3088284bf8fe"
+authors = ["robot144 <robot144@protonmail.com>"]
+version = "0.1.0"
