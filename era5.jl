@@ -131,7 +131,7 @@ function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,a
     json=pyimport("json")
     pydict_request=json.loads(request)
     month_str=lpad(string(month),2,"0")
-    filename = joinpath(folder,"era5_wind_$(year)$(month_str)_$(replace(area,"/"=>":")).nc")
+    filename = joinpath(folder,"era5_wind_$(year)$(month_str)_$(replace(area,"/"=>"_")).nc")
     @show filename
     println("Downloading $filename")
     era5.cds_client.retrieve(era5.dataset,pydict_request,filename)
