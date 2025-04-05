@@ -36,8 +36,6 @@ era5_latitude=reverse(era5_latitude)
 ifirst = findfirst(x->x>=tstart,era5_times)
 ilast = findlast(x->x<=tend,era5_times) 
 @show ifirst,ilast
-#@show era5_times
-times=era5_times[ifirst:ilast]
 # create subsets
 
 # create movie
@@ -54,7 +52,7 @@ anim = @animate for i in ifirst:ilast
         era5_longitude,
         era5_latitude,
         reverse(msl[:, :, i],dims=2)',
-        title="MSL pressure at $(times[i])",
+        title="MSL pressure at $(era5_times[i])",
         xlabel="Longitude",
         ylabel="Latitude",
         color=:viridis
