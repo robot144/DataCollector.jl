@@ -51,11 +51,12 @@ anim = @animate for i in ifirst:ilast
     heatmap(
         era5_longitude,
         era5_latitude,
-        reverse(msl[:, :, i],dims=2)',
-        title="MSL pressure at $(era5_times[i])",
+        0.01.*reverse(msl[:, :, i],dims=2)',
+        title="MSL pressure at $(era5_times[i]) [hPa]",
         xlabel="Longitude",
         ylabel="Latitude",
-        color=:viridis
+        color=:viridis,
+        clims=(950, 1050),
     )
 end
 gif(anim,"era5_pressure.gif", fps=10)
