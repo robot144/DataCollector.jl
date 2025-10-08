@@ -6,12 +6,19 @@
 # Start small:
 # 1. assume whole days
 # 2. assume variables wind, and mean sea level pressure
-# 3. assume that ~?.cdsapirc is already there (see https://cds.climate.copernicus.eu/how-to-api)
+# 3. assume that ~/.cdsapirc is already there (see https://cds.climate.copernicus.eu/how-to-api)
 # Allow selection of:
 # 1. date range
 # 2. area
 #
 
+# Move to this folder if not already there
+cd(@__DIR__)
+
+# activate the environment
+using Pkg
+Pkg.activate(".")
+# Load required packages
 using PythonCall
 using CondaPkg
 using Plots
@@ -103,7 +110,7 @@ end
 era_template=Dict(
     "product_type"=>"reanalysis",
     "format"=>"netcdf",
-    "variable"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure"],
+    "variable"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure","mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"],
     "area"=>"70/0/85/40",
     "year"=>"2000",
     "month"=>["03"],
@@ -181,7 +188,13 @@ end
 # Test era5 download for a single month
 function test1()
     era5 = CDS()
-    filename=get_month_chunk(era5,2013,12,[40,-15,65,20])
+    foldername="temp"
+    if isdir(foldername)
+        rm(foldername,recursive=true)
+    else
+        mkdir(foldername)
+    end
+    filename=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20])
     @show filename
     d=NetCDF.open(filename)
     @show d
