@@ -212,7 +212,7 @@ function test2()
     @show filenames
 end
 
-# collect the data 2008-1-1 to 2013-1-1
+# collect data for North Sea for 2008-1-1 to 2013-1-1
 era5 = CDS()
 foldername="era5_north_sea_2008_2012"
 if isdir(foldername)
@@ -220,3 +220,12 @@ if isdir(foldername)
 end
 mkdir(foldername)
 filenames=get_all_months(era5,foldername,(2008,1),(2013,12),[48,-5,62,12])
+
+# collect data for entire globe for december 2013
+era5 = CDS()
+foldername="era5_global_201312"
+if isdir(foldername)
+    rm(foldername,recursive=true)
+end
+mkdir(foldername)
+filenames=get_all_months(era5,foldername,(2013,12),(2013,12),[-90,-180,90,180])
