@@ -81,38 +81,49 @@ function daysinmonth_as_stringvector(year::Integer,month::Integer)
 end
 
 # Example JSON argument for downloading ERA5 surface data
-# 'reanalysis-era5-single-levels',
-# {
-#     'product_type':'reanalysis',
-#     'format':'netcdf',
-#     'variable':[
-#         '10m_u_component_of_wind','10m_v_component_of_wind','mean_sea_level_pressure','sea_ice_cover'
+# import cdsapi
+# dataset = "reanalysis-era5-single-levels"
+# request = {
+#     "product_type": ["reanalysis"],
+#     "variable": [
+#         "10m_u_component_of_wind",
+#         "10m_v_component_of_wind"
 #     ],
-#     'area':'70/0/85/40',
-#     'year':'2014',
-#     'month':['03'],
-#     'day':[
-#         '01','02','03',
-#         '04','05','06'
+#     "year": ["2025"],
+#     "month": ["01"],
+#     "day": ["01"],
+#     "time": [
+#         "00:00", "01:00", "02:00",
+#         "03:00", "04:00", "05:00",
+#         "06:00", "07:00", "08:00",
+#         "09:00", "10:00", "11:00",
+#         "12:00", "13:00", "14:00",
+#         "15:00", "16:00", "17:00",
+#         "18:00", "19:00", "20:00",
+#         "21:00", "22:00", "23:00"
 #     ],
-#     'time':[
-#         '00:00','01:00','02:00',
-#         '03:00','04:00','05:00',
-#         '06:00','07:00','08:00',
-#         '09:00','10:00','11:00',
-#         '12:00','13:00','14:00',
-#         '15:00','16:00','17:00',
-#         '18:00','19:00','20:00',
-#         '21:00','22:00','23:00'
-#     ]
-# },
-# 'era5_wind_20140301_06.nc')
+#     "data_format": "netcdf",
+#     "download_format": "unarchived",
+#     "area": [65, -15, 40, 15]
+# }
+
+# client = cdsapi.Client()
+# client.retrieve(dataset, request).download()
+
+# Define standard variable sets
+# NOTE: do not mix variables from meteo and waves in one request
+standard_variables=Dict(
+    "winds"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure"],
+    "waves"=>["mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"]
+)
+
 era_template=Dict(
-    "product_type"=>"reanalysis",
-    "format"=>"netcdf",
+    "product_type"=>["reanalysis"],
+    "data_format"=>"netcdf",
+    "download_format"=> "unarchived",
     "variable"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure","mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"],
-    "area"=>"70/0/85/40",
-    "year"=>"2000",
+    "area"=>[65, -15, 40, 15],
+    "year"=>["2000"],
     "month"=>["03"],
     "day"=>["01"],
     "time"=>[
@@ -127,21 +138,22 @@ era_template=Dict(
     ]
 )
 
-function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,area::Vector)
-    era5.template["year"] = string(year)
+function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,area::Vector,variable_set="winds")
+    era5.template["year"] = [string(year)]
     era5.template["month"] = [string(month)]
     era5.template["day"] = daysinmonth_as_stringvector(year,month)
     area=join(string.(area),"/")
     era5.template["area"] = area
+    era5.template["variable"] = standard_variables[variable_set]
     request = JSON.json(era5.template)
     println("request = $(request)")
     json=pyimport("json")
     pydict_request=json.loads(request)
     month_str=lpad(string(month),2,"0")
-    filename = joinpath(folder,"era5_wind_$(year)$(month_str)_$(replace(area,"/"=>"_")).nc")
+    filename = joinpath(folder,"era5_$(variable_set)_$(year)$(month_str)_$(replace(area,"/"=>"_")).nc")
     @show filename
     println("Downloading $filename")
-    era5.cds_client.retrieve(era5.dataset,pydict_request,filename)
+    era5.cds_client.retrieve(era5.dataset,pydict_request).download(filename)
     println("Finished download $filename")
     return filename
 end
@@ -174,11 +186,11 @@ julia> era5 = CDS()
 julia> foldername="temp"
 julia> get_all_months(era5,foldername,(2013,12),(2014,1),[48,-5,62,12])
 """
-function get_all_months(era5::CDS, foldername::String,start_month::Tuple{Integer,Integer}, end_month::Tuple{Integer,Integer}, area::Vector)
+function get_all_months(era5::CDS, foldername::String,start_month::Tuple{Integer,Integer}, end_month::Tuple{Integer,Integer}, area::Vector, variable_set="winds")
     filenames=[]
     this_month=start_month
     while this_month<=end_month
-        filename=get_month_chunk(era5,foldername,this_month...,area)
+        filename=get_month_chunk(era5,foldername,this_month...,area,variable_set)
         push!(filenames,filename)
         this_month=next_month(this_month)
     end
@@ -194,7 +206,8 @@ function test1()
     else
         mkdir(foldername)
     end
-    filename=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20])
+    filename=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20],"winds")
+    filename_waves=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20],"waves")
     @show filename
     d=NetCDF.open(filename)
     @show d
