@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["robot144 <robot144@protonmail.com>"]
 
 [deps]
+CommonDataModel = "1fbeeb36-5f17-413c-809b-666fb144f157"
 CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
@@ -11,8 +12,10 @@ NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
+ZarrDatasets = "519a4cdf-1362-424a-9ea1-b1d782dbb24b"
 
 [compat]
+CommonDataModel = "0.4.2"
 CondaPkg = "0.2.26"
 JSON = "0.21.4"
 NCDatasets = "0.14.10"
@@ -20,3 +23,4 @@ NetCDF = "0.12.1"
 Plots = "1.40.11"
 PythonCall = "0.9.24"
 Zarr = "0.9.4"
+ZarrDatasets = "0.1.4"

@@ -443,7 +443,9 @@ function main(args)
         tatts=Dict(allmaps[tname].attrib)
         tatts["_ARRAY_DIMENSIONS"]=["valid_time"]
         if !(tatts["units"] == "seconds since 1970-01-01")
-            error("Unexpected time units: $(tatts["units"]). Only 'seconds since 1970-01-01' is supported.")
+            #error("Unexpected time units: $(tatts["units"]). Only 'seconds since 1970-01-01' is supported.")
+            #overrule time units
+            tatts["units"]="seconds since 1970-01-01"
         end
         tvalues=date_time_to_seconds_since(allmaps[tname][:],DateTime(1970,1,1)) #NOTE doesn't consider metadata time units
         tvar = zcreate(Int64, output, "valid_time",length(tvalues),attrs=tatts)
@@ -487,7 +489,7 @@ end
 # some defaults for manual tesing
 # args=["test_data/era5_wind_201312_40_-15_65_20.nc"]
 # args=["test_data/era5_waves_201312_40_-15_65_20.nc"]
-args=["config_era2zarr.toml"] #TODO these names are not used
+# args=["config_era2zarr.toml"] #TODO these names are not used
 
 # do nothing when called as module
 if abspath(PROGRAM_FILE) == @__FILE__
