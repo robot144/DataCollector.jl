@@ -111,9 +111,11 @@ end
 # client.retrieve(dataset, request).download()
 
 # Define standard variable sets
-# NOTE: do not mix variables from meteo and waves in one request
+# NOTE: do not mix variables from meteo and waves in one request, since these are not delivered in the same file
+# Same for precipitation, which an accumulated variable, and wind, which is instantaneous.
 standard_variables=Dict(
     "winds"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure"],
+    "precipitation"=>["total_precipitation"],
     "waves"=>["mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"]
 )
 
@@ -138,7 +140,8 @@ era_template=Dict(
     ]
 )
 
-function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,area::Vector,variable_set="winds")
+function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,area::Vector,variable_set="winds",
+                        skip_if_exists=true)
     era5.template["year"] = [string(year)]
     era5.template["month"] = [string(month)]
     era5.template["day"] = daysinmonth_as_stringvector(year,month)
@@ -152,11 +155,54 @@ function get_month_chunk(era5::CDS,folder::String,year::Integer,month::Integer,a
     month_str=lpad(string(month),2,"0")
     filename = joinpath(folder,"era5_$(variable_set)_$(year)$(month_str)_$(replace(area,"/"=>"_")).nc")
     @show filename
-    println("Downloading $filename")
-    era5.cds_client.retrieve(era5.dataset,pydict_request).download(filename)
-    println("Finished download $filename")
-    return filename
+    if isfile(filename)
+        if skip_if_exists
+            println("File $filename already exists, skipping download.")
+            return filename
+        else
+            error("File $filename already exists, set skip_if_exists=true to skip download.")
+        end
+    else
+        println("Downloading data for $(year)-$(month_str) to $filename")
+        era5.cds_client.retrieve(era5.dataset,pydict_request).download(filename)
+        println("Finished download $filename")
+        return filename
+    end
 end
+
+function get_year_chunk(era5::CDS,folder::String,year::Integer,area::Vector,variable_set="winds",
+                        skip_if_exists=true)
+    era5.template["year"] = [string(year)]
+    era5.template["month"] = ["1","2","3","4","5","6","7","8","9","10","11","12"]
+    era5.template["day"] = [
+        "01","02","03","04","05","06","07","08","09","10",
+        "11","12","13","14","15","16","17","18","19","20",
+        "21","22","23","24","25","26","27","28","29","30","31"
+    ]
+    area=join(string.(area),"/")
+    era5.template["area"] = area
+    era5.template["variable"] = standard_variables[variable_set]
+    request = JSON.json(era5.template)
+    println("request = $(request)")
+    json=pyimport("json")
+    pydict_request=json.loads(request)
+    filename = joinpath(folder,"era5_$(variable_set)_$(year)_$(replace(area,"/"=>"_")).nc")
+    @show filename
+    if isfile(filename)
+        if skip_if_exists
+            println("File $filename already exists, skipping download.")
+            return filename
+        else
+            error("File $filename already exists, set skip_if_exists=true to skip download.")
+        end
+    else
+        println("Downloading data for $(year) to $filename")
+        era5.cds_client.retrieve(era5.dataset,pydict_request).download(filename)
+        println("Finished download $filename")
+        return filename
+    end
+end
+
 
 """
 Return next month as a tuple (year,month)
@@ -186,11 +232,12 @@ julia> era5 = CDS()
 julia> foldername="temp"
 julia> get_all_months(era5,foldername,(2013,12),(2014,1),[48,-5,62,12])
 """
-function get_all_months(era5::CDS, foldername::String,start_month::Tuple{Integer,Integer}, end_month::Tuple{Integer,Integer}, area::Vector, variable_set="winds")
+function get_all_months(era5::CDS, foldername::String,start_month::Tuple{Integer,Integer}, end_month::Tuple{Integer,Integer}, 
+                    area::Vector, variable_set="winds", skip_if_exists=true)
     filenames=[]
     this_month=start_month
     while this_month<=end_month
-        filename=get_month_chunk(era5,foldername,this_month...,area,variable_set)
+        filename=get_month_chunk(era5,foldername,this_month...,area,variable_set,skip_if_exists)
         push!(filenames,filename)
         this_month=next_month(this_month)
     end
@@ -221,24 +268,45 @@ function test2()
         rm(foldername,recursive=true)
     end
     mkdir(foldername)
-    filenames=get_all_months(era5,foldername,(2013,12),(2014,1),[48,-5,62,12])
+    filenames=get_all_months(era5,foldername,(1980,1),(1980,12),[43,-15,64,13],"winds",true)
     @show filenames
 end
 
 # collect data for North Sea for 2008-1-1 to 2013-1-1
-era5 = CDS()
-foldername="era5_north_sea_2008_2012"
-if isdir(foldername)
-    rm(foldername,recursive=true)
-end
-mkdir(foldername)
-filenames=get_all_months(era5,foldername,(2008,1),(2013,12),[48,-5,62,12])
+# DCSME area  15° W to 13° E and 43° N to 64° N ie [43,-15,64,13]
+# era5 = CDS()
+# foldername="era5_north_sea_1980_2023"
+# if isdir(foldername)
+#     rm(foldername,recursive=true)
+# end
+# mkdir(foldername)
+# # filenames=get_all_months(era5,foldername,(1980,1),(2023,12),[43,-15,64,13])
+# ## in parts
+# filenames=get_all_months(era5,foldername,(1980,1),(1980,12),[43,-15,64,13],"winds",true)
+# for year in 1981:2023
+#     filenames_year=get_all_months(era5,foldername,(year,1),(year,12),[43,-15,64,13],"winds",true)
+#     append!(filenames,filenames_year)
+# end
+#Too expensive: filename=get_year_chunk(era5,foldername,2024,[43,-15,64,13],"winds",true)
 
 # collect data for entire globe for december 2013
+# era5 = CDS()
+# foldername="era5_global_201312"
+# if isdir(foldername)
+#     rm(foldername,recursive=true)
+# end
+# mkdir(foldername)
+# filenames=get_all_months(era5,foldername,(2013,12),(2013,12),[-90,-180,90,180])
+
+# collect global data for 2020-2025 for wind and precipitation
 era5 = CDS()
-foldername="era5_global_201312"
-if isdir(foldername)
-    rm(foldername,recursive=true)
+foldername="era5_global_wind_and_precipitation_2020_2025"
+# if isdir(foldername)
+#     rm(foldername,recursive=true)
+# end
+# mkdir(foldername)
+filenames=[]
+for year in 2020:2025
+    filenames_year=get_all_months(era5,foldername,(year,1),(year,12),[-90,-180,90,180],"wind_and_precipitation",true)
+    append!(filenames,filenames_year)
 end
-mkdir(foldername)
-filenames=get_all_months(era5,foldername,(2013,12),(2013,12),[-90,-180,90,180])
