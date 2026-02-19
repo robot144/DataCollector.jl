@@ -8,7 +8,7 @@ cd(@__DIR__)
 
 # activate the environment
 using Pkg
-Pkg.activate(".") #assumes that this script is in the main project folder for DataCollector.jl, where the  Project.toml file.
+Pkg.activate("..") #Should point to the main project folder for DataCollector.jl, where the Project.toml file is.
 using DataCollector
 
 # collect data for North Sea for 2013-12-1 to 2013-1-1
