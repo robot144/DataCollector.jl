@@ -12,20 +12,6 @@
 # 2. area
 #
 
-# Move to this folder if not already there
-cd(@__DIR__)
-
-# activate the environment
-using Pkg
-Pkg.activate(".")
-# Load required packages
-using PythonCall
-using CondaPkg
-using Plots
-using Dates
-using NetCDF
-using Zarr
-using JSON
 
 # This struct will be a proxy for the CDS API
 struct CDS
@@ -244,33 +230,7 @@ function get_all_months(era5::CDS, foldername::String,start_month::Tuple{Integer
     return filenames
 end
 
-# Test era5 download for a single month
-function test1()
-    era5 = CDS()
-    foldername="temp"
-    if isdir(foldername)
-        rm(foldername,recursive=true)
-    else
-        mkdir(foldername)
-    end
-    filename=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20],"winds")
-    filename_waves=get_month_chunk(era5,foldername,2013,12,[40,-15,65,20],"waves")
-    @show filename
-    d=NetCDF.open(filename)
-    @show d
-end
 
-# Test era5 download for a range of months
-function test2()
-    era5 = CDS()
-    foldername="temp"
-    if isdir(foldername)
-        rm(foldername,recursive=true)
-    end
-    mkdir(foldername)
-    filenames=get_all_months(era5,foldername,(1980,1),(1980,12),[43,-15,64,13],"winds",true)
-    @show filenames
-end
 
 # collect data for North Sea for 2008-1-1 to 2013-1-1
 # DCSME area  15° W to 13° E and 43° N to 64° N ie [43,-15,64,13]
@@ -299,14 +259,14 @@ end
 # filenames=get_all_months(era5,foldername,(2013,12),(2013,12),[-90,-180,90,180])
 
 # collect global data for 2020-2025 for wind and precipitation
-era5 = CDS()
-foldername="era5_global_wind_and_precipitation_2020_2025"
+# era5 = CDS()
+# foldername="era5_global_wind_and_precipitation_2020_2025"
 # if isdir(foldername)
 #     rm(foldername,recursive=true)
 # end
-# mkdir(foldername)
-filenames=[]
-for year in 2020:2025
-    filenames_year=get_all_months(era5,foldername,(year,1),(year,12),[-90,-180,90,180],"wind_and_precipitation",true)
-    append!(filenames,filenames_year)
-end
+# # mkdir(foldername)
+# filenames=[]
+# for year in 2020:2025
+#     filenames_year=get_all_months(era5,foldername,(year,1),(year,12),[-90,-180,90,180],"wind_and_precipitation",true)
+#     append!(filenames,filenames_year)
+# end
