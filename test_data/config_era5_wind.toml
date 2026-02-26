@@ -1,0 +1,29 @@
+[global]
+islatlon = true
+xchunk = 141
+netcdf_files = ["era5_wind_201312_40_-15_65_20.nc"]
+zarr_file = "era5_wind.zarr"
+ychunk = 101
+chunk_target_size = 1000000
+timechunk = 24
+
+    [global.extent]
+    ymin = 40.0
+    ymax = 65.0
+    xmax = 20.0
+    xmin = -15.0
+
+[10m_v_component_of_wind]
+add_offset = 0.0
+data_type = "Int16"
+scale_factor = 0.01
+
+[mean_sea_level_pressure]
+add_offset = 100000.0
+data_type = "Int16"
+scale_factor = 1.0
+
+[10m_u_component_of_wind]
+add_offset = 0.0
+data_type = "Int16"
+scale_factor = 0.01

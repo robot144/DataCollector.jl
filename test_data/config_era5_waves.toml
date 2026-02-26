@@ -1,0 +1,29 @@
+[mean_wave_direction]
+add_offset = 0.0
+data_type = "Int16"
+scale_factor = 0.1
+
+[global]
+islatlon = true
+xchunk = 71
+netcdf_files = ["era5_waves_201312_40_-15_65_20.nc"]
+zarr_file = "era5_waves.zarr"
+ychunk = 51
+chunk_target_size = 1000000
+timechunk = 24
+
+    [global.extent]
+    ymin = 40.0
+    ymax = 65.0
+    xmax = 20.0
+    xmin = -15.0
+
+[significant_height_of_combined_wind_waves_and_swell]
+add_offset = 0.0
+data_type = "Int16"
+scale_factor = 0.01
+
+[mean_wave_period]
+add_offset = 0.0
+data_type = "Int16"
+scale_factor = 0.1

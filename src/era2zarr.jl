@@ -3,12 +3,6 @@
 # Also quantize and compress the data for efficient storage.
 # Multiple netcdf files can be merged into a single Zarr store.
 
-using NCDatasets
-using CommonDataModel
-using Zarr
-using Dates
-using TOML
-
 debuglevel = 1  # 0: none, 1: info, 2: debug
 chunk_target_size=1000000 # target chunk size in number of array elements
 
@@ -378,7 +372,7 @@ end
 #
 # main function
 #
-function main(args)
+function convert_era5_to_zarr(args)
     # read user input
     n = length(args)
     if n < 1
@@ -482,19 +476,4 @@ function main(args)
         @info "Configuration has been written to $(configfile)"
     end
 end
-#
-# Call main if used as a script, but not if loaded as a module 
-#
 
-# some defaults for manual tesing
-# args=["test_data/era5_wind_201312_40_-15_65_20.nc"]
-# args=["test_data/era5_waves_201312_40_-15_65_20.nc"]
-# args=["config_era2zarr.toml"] #TODO these names are not used
-
-# do nothing when called as module
-if abspath(PROGRAM_FILE) == @__FILE__
-    println("ARGS = $(ARGS)")
-    @time main(ARGS)
-end
-
-nothing

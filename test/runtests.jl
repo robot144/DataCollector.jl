@@ -24,5 +24,8 @@ mkdir(temp_dir) # create a new empty temp directory
       include("test_era5.jl")
    end
 
+   @testset "Convert ERA5 NetCDF data to Zarr format" begin
+      include("test_era2zarr.jl")
+   end   
 
 end
