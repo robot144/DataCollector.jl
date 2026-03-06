@@ -102,14 +102,15 @@ end
 standard_variables=Dict(
     "winds"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure"],
     "precipitation"=>["total_precipitation"],
-    "waves"=>["mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"]
+    "waves"=>["mean_wave_direction","mean_wave_period",
+"significant_height_of_combined_wind_waves_and_swell", "significant_height_of_total_swell", "peak_wave_period", "mean_period_of_total_swell", "mean_direction_of_total_swell"]
 )
 
 era_template=Dict(
     "product_type"=>["reanalysis"],
     "data_format"=>"netcdf",
     "download_format"=> "unarchived",
-    "variable"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure","mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"],
+    "variable"=>["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure"],
     "area"=>[65, -15, 40, 15],
     "year"=>["2000"],
     "month"=>["03"],

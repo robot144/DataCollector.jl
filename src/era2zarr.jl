@@ -10,8 +10,9 @@ chunk_target_size=1000000 # target chunk size in number of array elements
 # defaults
 #
 # look for these variables in the ERA5 data files
-try_vars = ["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure",
-            "mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell"]
+try_vars = ["10m_u_component_of_wind","10m_v_component_of_wind","mean_sea_level_pressure","total_precipitation",
+            "mean_wave_direction","mean_wave_period","significant_height_of_combined_wind_waves_and_swell",
+            "mean_direction_of_total_swell","peak_wave_period","significant_height_of_total_swell","mean_period_of_total_swell"]
 defaults = Dict(
     "10m_u_component_of_wind" => Dict(
         "name" => "10m_u_component_of_wind",
@@ -49,6 +50,36 @@ defaults = Dict(
         "add_offset" => 0.0,
         "data_type" => "Int16",
         "_FillValue" => typemax(Int16) ),
+    "mean_period_of_total_swell" => Dict(
+        "name" => "mean_period_of_total_swell",
+        "scale_factor" => 0.01,
+        "add_offset" => 0.0,
+        "data_type" => "Int16",
+        "_FillValue" => typemax(Int16) ),
+    "significant_height_of_total_swell" => Dict(
+        "name" => "significant_height_of_total_swell",
+        "scale_factor" => 0.01,
+        "add_offset" => 0.0,
+        "data_type" => "Int16",
+        "_FillValue" => typemax(Int16) ),
+    "peak_wave_period" => Dict(
+        "name" => "peak_wave_period",
+        "scale_factor" => 0.01,
+        "add_offset" => 0.0,
+        "data_type" => "Int16",
+        "_FillValue" => typemax(Int16) ),   
+    "mean_direction_of_total_swell" => Dict(
+        "name" => "mean_direction_of_total_swell",
+        "scale_factor" => 0.01,
+        "add_offset" => 0.0,
+        "data_type" => "Int16",
+        "_FillValue" => typemax(Int16) ),  
+    "total_precipitation" => Dict(
+        "name" => "total_precipitation",
+        "scale_factor" => 0.0001,
+        "add_offset" => 0.0,
+        "data_type" => "Int16",
+        "_FillValue" => typemax(Int16) ),
     "valid_time" => Dict(
         "name" => "valid_time",
         "data_type" => "Int64",
@@ -78,10 +109,18 @@ aliases=Dict{String,Vector{String}}(
     "mean_wave_direction" => ["mwd"],
     "mean_wave_period" => ["mwp"],
     "significant_height_of_combined_wind_waves_and_swell" => ["hs","swh"],
+    "mean_direction_of_total_swell" => ["mdts"],
+    "peak_wave_period" => ["pp1d"],
+    "significant_height_of_total_swell" => ["shts"],
+    "mean_period_of_total_swell" => ["mpts"],
+    "total_precipitation" => ["tp"],
     "longitude" => ["longitude","lon"],
     "latitude" => ["latitude","lat"],
     "valid_time" => ["valid_time","time"]
 )
+
+#  "waves"=>["mean_wave_direction","mean_wave_period",
+# "significant_height_of_combined_wind_waves_and_swell", "significant_height_of_total_swell", "peak_wave_period", "mean_period_of_total_swell", ]
 
 
 #
@@ -254,6 +293,18 @@ function scale_values(in_values,in_dummy,out_type,out_offset,out_scale,out_dummy
     return out_values
  end
 
+
+ # apply scaling and quantization to a single value
+@inline function scale_one(in_value,in_dummy,out_type,out_offset,out_scale,out_dummy)
+    if ismissing(in_value) || (in_value == in_dummy) || (in_value isa AbstractFloat && isnan(in_value))
+        return out_dummy
+    end
+    temp_value = (in_value - out_offset) / out_scale
+    temp_value = min(temp_value, typemax(out_type))
+    temp_value = max(temp_value, typemin(out_type))
+    return round(out_type, temp_value)
+end
+
 """
 function copy_var(input::CommonDataModel.AbstractDataset,output,varname,config,y_reversed=true,stop_on_missing=true)
 Copy variable from input dataset to output zarr store with scaling and compression.
@@ -313,38 +364,30 @@ function copy_var(input::CommonDataModel.AbstractDataset,output,varname,config,y
     if in_rank==1
         #in one go 
         in_temp=in_var[:]
-        if out_type<:Int
-            out_temp=round.(out_type,(in_temp.-out_offset)./out_scale)
-            out_temp[in_temp.==in_dummy].=out_dummy
-            out_var[:].=out_temp[:]
-        else
-            out_temp=(in_temp.-out_offset)./out_scale
-            out_temp[in_temp.==in_dummy].=out_dummy
-            out_var[:].=out_temp[:]    
-        end
+        out_temp=scale_one.(in_temp,in_dummy,out_type,out_offset,out_scale,out_dummy)
+        out_var[:].=out_temp[:]
     elseif in_rank==3
         println("out_chunk_size = $(out_chunk_size)")
         if prod(in_size)==prod(out_chunk_size)
             #in one go 
             in_temp=in_var[:,:,:]
-            out_temp=round.(out_type,(in_temp.-out_offset)./out_scale)
-            out_temp[in_temp.==in_dummy].=out_dummy
+            out_temp=scale_one.(in_temp,in_dummy,out_type,out_offset,out_scale,out_dummy)
             if y_reversed
                 out_var[:, :, :].=out_temp[:, end:-1:1, :] #reverse y
             else
                 out_var[:,:,:].=out_temp[:,:,:]
             end
         else #multiple blocks in time
-            nblocks=max(div(prod(in_size),prod(out_chunk_size)),1)
-            dimlen=in_size[3]
+            # nblocks=max(div(prod(in_size),prod(out_chunk_size)),1)
+            nblocks=max(div(in_size[end],out_chunk_size[end]),1)
+            dimlen=in_size[end]
             blockstep=max(1,div(dimlen,nblocks))
             ifirst=1
             while ifirst<dimlen
                 println("  processing time indices $(ifirst) to $(min(ifirst+blockstep-1,dimlen)) of $(dimlen)")
                 ilast=min(ifirst+blockstep-1,dimlen)
                 in_temp=in_var[:,: ,ifirst:ilast]
-                out_temp=round.(out_type,(in_temp.-out_offset)./out_scale)
-                out_temp[in_temp.==in_dummy].=out_dummy
+                out_temp=scale_one.(in_temp,in_dummy,out_type,out_offset,out_scale,out_dummy)
                 if y_reversed
                     out_var[:, :, ifirst:ilast]=out_temp[:, end:-1:1, :] #reverse y
                 else
