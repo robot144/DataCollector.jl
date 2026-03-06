@@ -14,7 +14,7 @@ using DataCollector
 # collect data for North Sea for 2013-12-1 to 2013-1-1
 # DCSME area  15° W to 13° E and 43° N to 64° N ie [43,-15,64,13]
 area=[43,-15,64,13]
-area_name="north_sea"
+area_name="northsea"
 parameterset="winds" #see Dict standard_variables
 first_month=(2013,12)
 last_month=(2013,12)
